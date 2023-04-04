@@ -1,0 +1,36 @@
+[
+    {
+        "name": "人氣精選",
+        "items": [
+            {
+                "id": 1,
+                "name": "咔啦雞腿堡XL套餐 (中辣)",
+                "image": "https://images.deliveryhero.io/image/fd-tw/Products/48653766.jpg?width=1200",
+                "price": 225
+            },
+            {
+                "id": 2,
+                "name": "吮指雙雞絕配餐(中辣)",
+                "image": "https://images.deliveryhero.io/image/fd-tw/Products/67900069.jpg?width=1200",
+                "price": 207
+            }
+        ]
+    },
+    {
+        "name": "XL超豪肯餐",
+        "items": [
+            {
+                "id": 3,
+                "name": "花生熔岩咔啦雞腿堡XL套餐(中辣)",
+                "image": "https://images.deliveryhero.io/image/fd-tw/Products/48653699.jpg?width=1200",
+                "price": 239
+            },
+            {
+                "id": 4,
+                "name": "青花椒香麻咔啦雞腿堡XL餐 (辣)",
+                "image": "https://images.deliveryhero.io/image/fd-tw/Products/48655379.jpg?width=1200",
+                "price": 230
+            }
+        ]
+    }
+]
