@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:food_delivery/home/home_screen.dart';
 import 'package:food_delivery/repository/restaurant_repository.dart';
+import 'package:food_delivery/restaurant/cart/cart_screen.dart';
 import 'package:food_delivery/restaurant/restaurant_screen.dart';
 import 'package:go_router/go_router.dart';
 
@@ -12,7 +13,7 @@ class Routes {
   static const String restaurantDetail = '/restaurantDetail';
 
   /// 購物車頁
-  static const String cart = '/cart';
+  static const String cart = 'cart';
 
   /// 結帳頁
   static const String checkout = '/checkout';
@@ -27,11 +28,23 @@ final kRouterProvider = Provider<GoRouter>((ref) {
       builder: (context, state) => HomeScreen(),
     ),
     GoRoute(
-      path: Routes.restaurantDetail,
-      name: Routes.restaurantDetail,
-      builder: (context, state) => RestaurantScreen(
-        restaurant: state.extra as Restaurant,
-      ),
-    ),
+        path: Routes.restaurantDetail,
+        name: Routes.restaurantDetail,
+        builder: (context, state) => RestaurantScreen(
+              restaurant: state.extra as Restaurant,
+            ),
+        routes: [
+          GoRoute(
+            path: Routes.cart,
+            name: Routes.cart,
+            builder: (context, state) {
+              final data = state.extra as Map<String, dynamic>;
+              return CartScreen(
+                restaurant: data['restaurant'] as Restaurant,
+                cart: data['cart'] as Map<Meal, int>,
+              );
+            },
+          ),
+        ]),
   ]);
 });

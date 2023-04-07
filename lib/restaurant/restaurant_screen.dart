@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:food_delivery/repository/restaurant_repository.dart';
 import 'package:food_delivery/restaurant/restaurant_view_model.dart';
+import 'package:food_delivery/route.dart';
 import 'package:gap/gap.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 class RestaurantScreen extends ConsumerStatefulWidget {
@@ -36,6 +38,7 @@ class _RestaurantScreenState extends ConsumerState<RestaurantScreen> {
   @override
   Widget build(BuildContext context) {
     final group = ref.watch(_provider).mealGroups;
+    final cart = ref.watch(_provider).cart;
     return Scaffold(
       body: NestedScrollView(
         headerSliverBuilder: (context, innerBoxIsScrolled) {
@@ -58,40 +61,68 @@ class _RestaurantScreenState extends ConsumerState<RestaurantScreen> {
           ];
         },
         body: Builder(builder: (context) {
-          return Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: CustomScrollView(
-              slivers: [
-                SliverOverlapInjector(
-                    handle: NestedScrollView.sliverOverlapAbsorberHandleFor(
-                        context)),
-                SliverToBoxAdapter(
-                  child: Row(
-                    children: [
-                      Text(restaurant.name,
-                          style: Theme.of(context).textTheme.titleLarge),
-                      const Spacer(),
-                      Text('${_ratingFormat.format(restaurant.rating)}/5'),
+          return Column(
+            children: [
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: CustomScrollView(
+                    slivers: [
+                      SliverOverlapInjector(
+                          handle:
+                              NestedScrollView.sliverOverlapAbsorberHandleFor(
+                                  context)),
+                      SliverToBoxAdapter(
+                        child: Row(
+                          children: [
+                            Text(restaurant.name,
+                                style: Theme.of(context).textTheme.titleLarge),
+                            const Spacer(),
+                            Text(
+                                '${_ratingFormat.format(restaurant.rating)}/5'),
+                          ],
+                        ),
+                      ),
+                      const SliverToBoxAdapter(child: Gap(16)),
+                      SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          childCount: group.length,
+                          (context, index) {
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              child: MealGroupItem(
+                                group: group[index],
+                                onTap: _onTapMeal,
+                              ),
+                            );
+                          },
+                        ),
+                      ),
                     ],
                   ),
                 ),
-                const SliverToBoxAdapter(child: Gap(16)),
-                SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    childCount: group.length,
-                    (context, index) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        child: MealGroupItem(
-                          group: group[index],
-                          onTap: _onTapMeal,
-                        ),
-                      );
-                    },
+              ),
+              // 下方購物車按鈕區域，如果購物車沒有東西就不顯示，上方顯示陰影
+              if (cart.isNotEmpty)
+                Container(
+                  height: 100,
+                  width: double.infinity,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                  decoration: const BoxDecoration(
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black12,
+                        blurRadius: 4,
+                        offset: Offset(0, -4),
+                      ),
+                    ],
+                    color: Colors.white,
                   ),
+                  child: ElevatedButton(
+                      onPressed: _goToCart, child: Text('購物車(${cart.length})')),
                 ),
-              ],
-            ),
+            ],
           );
         }),
       ),
@@ -103,26 +134,82 @@ class _RestaurantScreenState extends ConsumerState<RestaurantScreen> {
     await ref.read(_provider.notifier).getMealGroups(restaurant);
   }
 
+  /// 點擊顯示BottomSheet加入購物車，並且有+/-來增減數量，最少為1
   Future<void> _onTapMeal(Meal meal) async {
-    await showDialog(
+    final count = await showModalBottomSheet<int>(
         context: context,
         builder: (context) {
-          return AlertDialog(
-            title: Text(meal.name),
-            content: Text('${meal.price} \$'),
-            actions: [
-              TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('取消')),
-              TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('加入購物車')),
-            ],
-          );
+          return MealBottomSheet(meal: meal);
         });
+    if (count != null) {
+      ref.read(_provider.notifier).addToCart(meal, count);
+    }
+  }
+
+  /// 前往購物車頁面
+  void _goToCart() {
+    context.pushNamed(Routes.cart, extra: {
+      'restaurant': restaurant,
+      'cart': ref.read(_provider).cart,
+    });
   }
 }
 
+/// 加入購物車的BottomSheet
+class MealBottomSheet extends StatefulWidget {
+  const MealBottomSheet({required this.meal, super.key});
+
+  final Meal meal;
+
+  @override
+  State<MealBottomSheet> createState() => _MealBottomSheetState();
+}
+
+class _MealBottomSheetState extends State<MealBottomSheet> {
+  int count = 1;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 250,
+      child: Column(
+        children: [
+          MealItem(meal: widget.meal),
+          const Gap(16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              IconButton(onPressed: decrement, icon: const Icon(Icons.remove)),
+              Text('$count'),
+              IconButton(onPressed: increment, icon: const Icon(Icons.add)),
+            ],
+          ),
+          const Gap(16),
+          ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(count),
+              child: const Text('加入購物車'))
+        ],
+      ),
+    );
+  }
+
+  /// 增加數量
+  void increment() {
+    setState(() {
+      count++;
+    });
+  }
+
+  /// 減少數量
+  void decrement() {
+    if (count == 1) return;
+    setState(() {
+      count--;
+    });
+  }
+}
+
+/// 顯示餐點的Widget
 class MealGroupItem extends StatelessWidget {
   const MealGroupItem({required this.group, required this.onTap, super.key});
 
@@ -147,6 +234,7 @@ class MealGroupItem extends StatelessWidget {
   }
 }
 
+/// 顯示餐點的Widget
 class MealItem extends StatelessWidget {
   const MealItem({required this.meal, super.key});
 
