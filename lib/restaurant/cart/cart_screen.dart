@@ -63,7 +63,10 @@ class _CartScreenState extends ConsumerState<CartScreen> {
             Expanded(
               child: TextButton(
                 onPressed: () {
-                  // context.go('/checkout');
+                  context.go('/checkout', extra: {
+                    'restaurant': widget.restaurant,
+                    'cart': widget.cart
+                  });
                 },
                 child: const Text('結帳'),
               ),

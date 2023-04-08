@@ -5,6 +5,7 @@ import 'package:food_delivery/repository/restaurant_repository.dart';
 import 'package:food_delivery/route.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   HomeScreen({HomeViewModel? model, super.key})
@@ -47,6 +48,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   /// 初始化
   Future<void> _init() async {
     await ref.read(_provider.notifier).getRestaurants();
+    await Permission.locationWhenInUse.request();
   }
 
   void _onItemTap(Restaurant restaurant) {
